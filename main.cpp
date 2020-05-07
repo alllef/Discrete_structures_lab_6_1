@@ -17,12 +17,21 @@ void initializeGraph(int &picks, int &ribs, vector<Rib> &structRibs);
 
 void sortRibs(int &picks, int &ribs, vector<Rib> &structRibs);
 
+bool hasEilerCycle(int &picks, int &ribs, vector<Rib> &structRibs);
+
+vector<int> findPath(int &picks, int &ribs, vector<Rib> structRibs, int startPick);
+
+bool hasEilerPath(int &picks, int &ribs, vector<Rib> &structRibs);
+
+vector<int> findEilerCycle(int &picks, int &ribs, vector<Rib> &structRibs);
+
 int main() {
     SetConsoleOutputCP(CP_UTF8);
     vector<Rib> ribsList;
     int n = 0, m = 0;
     initializeGraph(n, m, ribsList);
     sortRibs(n, m, ribsList);
+    findEilerCycle(n, m, ribsList);
     return 0;
 }
 
@@ -56,4 +65,88 @@ void sortRibs(int &picks, int &ribs, vector<Rib> &structRibs) {
             }
         }
     }
+}
+
+bool hasEilerCycle(int &picks, int &ribs, vector<Rib> &structRibs) {
+    int incidenceCounter = 0;
+    for (int i = 1; i <= picks; i++) {
+        for (auto &structRib : structRibs) {
+            if (structRib.start == i || structRib.end == i) incidenceCounter++;
+        }
+        if (incidenceCounter % 2 != 0) return false;
+    }
+
+    return true;
+}
+
+bool hasEilerPath(int &picks, int &ribs, vector<Rib> &structRibs) {
+    vector<int> tmpRib;
+    int incidenceCounter = 0;
+    int unDoubleDegree = 0;
+    for (int i = 1; i <= picks; i++) {
+        for (auto &structRib : structRibs) {
+            if (structRib.start == i || structRib.end == i) incidenceCounter++;
+        }
+        if (incidenceCounter % 2 == 1) {
+            unDoubleDegree++;
+            if (unDoubleDegree > 2) return false;
+            tmpRib.push_back(i);
+        }
+        incidenceCounter = 0;
+    }
+    Rib myRib{};
+    myRib.start = tmpRib[0];
+    myRib.end = tmpRib[1];
+    structRibs.push_back(myRib);
+    return true;
+}
+
+vector<int> findPath(int &picks, int &ribs, vector<Rib> structRibs, int startPick) {
+
+    stack<int> myStack;
+    vector<int> path;
+    vector<Rib> tmpRibs = structRibs;
+
+    myStack.push(startPick);
+
+
+    while (!myStack.empty()) {
+        int currPick = myStack.top();
+        int currSize = tmpRibs.size();
+        for (int i = 0; i < currSize; i++) {
+
+            if (tmpRibs[i].start == myStack.top()) {
+                myStack.push(tmpRibs[i].end);
+                tmpRibs.erase(tmpRibs.begin() + i);
+
+                break;
+            }
+
+            if (tmpRibs[i].end == myStack.top()) {
+                myStack.push(tmpRibs[i].start);
+                tmpRibs.erase(tmpRibs.begin() + i);
+
+
+                break;
+            }
+
+        }
+        if (currPick == myStack.top()) {
+            path.push_back(myStack.top());
+            myStack.pop();
+
+        }
+    }
+    return path;
+}
+
+vector<int> findEilerCycle(int &picks, int &ribs, vector<Rib> &structRibs) {
+    if (hasEilerCycle(picks, ribs, structRibs))return findPath(picks, ribs, structRibs, rand() % picks + 1);
+    if (hasEilerPath(picks, ribs, structRibs)) {
+        vector<int> tmp = findPath(picks, ribs, structRibs, structRibs.back().start);
+        tmp.erase(tmp.end());
+        structRibs.erase(structRibs.end());
+        return tmp;
+    }
+    return {};
 }
